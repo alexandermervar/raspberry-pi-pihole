@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAL-1000 :: DIAGNOSTIC UTILITY v1.0</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg:          #0000aa;
+            --bg2:         #000088;
+            --bg3:         #0000cc;
+            --bg4:         #1111bb;
+            --border:      #4444cc;
+            --border2:     #6666ee;
+            --text:        #ffffff;
+            --text-dim:    #aaaaff;
+            --text-faint:  #6666cc;
+            --hal:         #ffff55;
+            --hal-dim:     #cccc00;
+            --hal-glow:    rgba(255,255,85,0.12);
+            --amber:       #ff9900;
+            --blue-bright: #55ffff;
+            --green-ok:    #55ff55;
+            --red-err:     #ff5555;
+            --topnav-h:    40px;
+            --sidebar-w:   250px;
+        }
+
+        /* ===== LIGHT MODE (Printed DOS Manual) ===== */
+        html[data-theme="light"] {
+            --bg:          #f0f0f0;
+            --bg2:         #e0e0e0;
+            --bg3:         #d8d8d8;
+            --bg4:         #e8e8e8;
+            --border:      #aaaaaa;
+            --border2:     #888888;
+            --text:        #000033;
+            --text-dim:    #333366;
+            --text-faint:  #666699;
+            --hal:         #cc8800;
+            --hal-dim:     #996600;
+            --hal-glow:    rgba(204,136,0,0.12);
+            --amber:       #994400;
+            --blue-bright: #0000cc;
+            --green-ok:    #006600;
+            --red-err:     #cc0000;
+        }
+
+        html[data-theme="light"] .topnav {
+            background: #d0d0e0;
+            border-bottom: 2px solid #666688;
+        }
+        html[data-theme="light"] .topnav-brand { color: #884400; }
+        html[data-theme="light"] .topnav-link { color: #333366; }
+        html[data-theme="light"] .topnav-link:hover { background: #c0c0d0; color: #000033; }
+        html[data-theme="light"] .topnav-link.active { color: #884400; background: #c8c8d8; }
+
+        html[data-theme="light"] .sidebar { background: var(--bg2); border-right-color: #888888; }
+        html[data-theme="light"] .nav-label { background: #333366; color: #ffffff; }
+        html[data-theme="light"] .hal-logo { background: #d8d8e8; border-color: #888888; color: #884400; }
+        html[data-theme="light"] .header { background: #d8d8e8; border-bottom-color: #888888; }
+        html[data-theme="light"] .header h1 { color: #884400; }
+        html[data-theme="light"] section h2 { background: #333366; color: #ffffff; }
+        html[data-theme="light"] section h3 { color: #884400; }
+        html[data-theme="light"] .code-block { background: #e8e8e8; border-color: #888888; }
+        html[data-theme="light"] .code-block code { color: #000033; }
+        html[data-theme="light"] .code-block .key { color: #0000cc; }
+        html[data-theme="light"] .code-block .flag { color: #994400; }
+        html[data-theme="light"] .code-block .str { color: #006600; }
+        html[data-theme="light"] .code-block .cm { color: #666666; }
+        html[data-theme="light"] table th { background: #333366; color: #ffffff; border-bottom-color: #222244; }
+        html[data-theme="light"] .start-here { background: #e8e8d8; border-left-color: #884400; }
+        html[data-theme="light"] .variables-panel { background: #e8e8e8; border-color: #888888; }
+        html[data-theme="light"] .variables-panel h4 { background: #333366; color: #ffffff; }
+        html[data-theme="light"] .var-input input { background: #ffffff; border-color: #888888; color: #000033; }
+        html[data-theme="light"] .acc-panel { background: #e0e0e8; border-top-color: #888888; }
+        html[data-theme="light"] .acc-btn { background: #d0d0e0; border-color: #888888; color: #000033; }
+        html[data-theme="light"] .acc-btn:hover { background: #c0c0d0; border-color: #333366; }
+        html[data-theme="light"] .acc-btn.active { background: #333366; color: #ffffff; }
+
+        /* ===== FONT SIZE STEPS ===== */
+        html[data-font="large"]  { font-size: 16px; }
+        html[data-font="xlarge"] { font-size: 18px; }
+
+        body {
+            font-family: 'Share Tech Mono', 'Courier New', 'Lucida Console', Courier, monospace;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            font-size: 14px;
+            min-height: 100vh;
+        }
+
+        /* ===== LAYOUT ===== */
+        /* ===== TOP NAV ===== */
+        .topnav {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: var(--topnav-h);
+            background: var(--bg2);
+            border-bottom: 2px solid #aaaaaa;
+            display: flex; align-items: center;
+            padding: 0 16px; gap: 0;
+            z-index: 300;
+        }
+        .topnav-brand {
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            font-size: 13px; font-weight: bold;
+            color: var(--hal); letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-right: 24px; flex-shrink: 0;
+        }
+        .topnav-links { display: flex; gap: 0; }
+        .topnav-link {
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            font-size: 12px; letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-dim); text-decoration: none;
+            padding: 4px 12px;
+            transition: color 0.1s, background 0.1s;
+        }
+        .topnav-link:hover { color: #ffffff; background: var(--bg3); }
+        .topnav-link.active { color: var(--hal); background: var(--bg3); }
+
+        /* ===== LAYOUT ===== */
+        .container {
+            display: flex;
+            min-height: 100vh;
+            padding-top: var(--topnav-h);
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: var(--bg2);
+            border-right: 2px solid #aaaaaa;
+            padding: 16px;
+            position: fixed;
+            top: var(--topnav-h);
+            height: calc(100vh - var(--topnav-h));
+            overflow-y: auto;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: var(--bg3); }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--hal-dim); border-radius: 0; }
+
+        .hal-logo {
+            display: block;
+            margin-bottom: 16px;
+            text-decoration: none;
+            color: var(--hal);
+            font-weight: bold;
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 6px 8px;
+            background: #000055;
+            border: 1px solid #aaaaaa;
+        }
+
+        .nav-section {
+            margin-bottom: 18px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            color: #000088;
+            background: #aaaaaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 2px 6px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .nav-links a {
+            padding: 5px 8px;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+            border-left: 2px solid transparent;
+            transition: color 0.1s, background 0.1s;
+            display: block;
+        }
+
+        .nav-links a:hover {
+            color: var(--hal);
+            background: var(--bg3);
+            border-left-color: var(--hal);
+        }
+
+        .nav-links a.active {
+            color: var(--hal);
+            background: var(--bg3);
+            border-left-color: var(--hal);
+        }
+
+        .sidebar-footer {
+            border-top: 1px solid var(--border);
+            padding-top: 14px;
+            margin-top: auto;
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-footer a {
+            color: var(--blue-bright);
+            text-decoration: none;
+            margin-right: 8px;
+        }
+
+        .sidebar-footer a:hover { text-decoration: underline; }
+
+        /* ===== ACCESSIBILITY PANEL ===== */
+        .acc-panel {
+            border-top: 1px solid var(--border);
+            padding: 12px 8px 8px;
+            margin-top: 12px;
+        }
+        .acc-panel-label {
+            font-size: 10px; color: #000088; background: #aaaaaa;
+            display: block; padding: 1px 6px; margin-bottom: 8px;
+            letter-spacing: 1px; text-transform: uppercase; font-weight: bold;
+        }
+        .acc-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+        .acc-tag { font-size: 10px; color: var(--text-faint); letter-spacing: 1px; text-transform: uppercase; min-width: 52px; }
+        .acc-btn {
+            background: var(--bg3); border: 1px solid #aaaaaa; color: var(--text-dim);
+            padding: 3px 10px; cursor: pointer; font-size: 11px;
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            letter-spacing: 1px; transition: all 0.1s;
+        }
+        .acc-btn:hover { background: var(--bg4); border-color: var(--hal); color: var(--hal); }
+        .acc-btn.active { background: var(--hal-dim); border-color: var(--hal); color: var(--hal); }
+        .acc-sq { padding: 3px 8px; }
+        .font-controls { display: flex; align-items: center; gap: 4px; }
+        .font-label { font-size: 10px; color: var(--text-dim); min-width: 28px; text-align: center; }
+
+        /* ===== MAIN CONTENT ===== */
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            background: var(--bg);
+        }
+
+        .header {
+            background: var(--bg2);
+            border-bottom: 2px solid #aaaaaa;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--hal);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            color: var(--text-dim);
+            font-size: 13px;
+        }
+
+        .content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 30px 60px;
+        }
+
+        /* ===== SECTIONS ===== */
+        section {
+            margin-bottom: 40px;
+            scroll-margin-top: calc(var(--topnav-h) + 20px);
+        }
+
+        section h2 {
+            font-size: 13px;
+            color: #0000aa;
+            background: #aaaaaa;
+            padding: 4px 10px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            border: none;
+            display: block;
+        }
+
+        html[data-theme="light"] section h2 {
+            background: #333366;
+            color: #ffffff;
+        }
+
+        section h3 {
+            font-size: 14px;
+            color: var(--hal);
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        section p {
+            margin-bottom: 15px;
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        section ul, section ol {
+            margin: 15px 0 15px 25px;
+            color: var(--text);
+        }
+
+        section li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        /* ===== BLOCKS ===== */
+        .start-here {
+            background: #000055;
+            border-left: 4px solid var(--hal);
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .start-here h3 {
+            color: var(--hal);
+            margin-top: 0;
+        }
+
+        .verify, .trouble {
+            margin: 16px 0;
+            border: 1px solid var(--border2);
+            overflow: hidden;
+        }
+        .verify { border-left: 4px solid var(--green-ok); }
+        .trouble { border-left: 4px solid var(--amber); }
+
+        .verify > summary, .trouble > summary {
+            padding: 10px 14px;
+            cursor: pointer;
+            background: var(--bg2);
+            user-select: none;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex; align-items: center; gap: 8px;
+            letter-spacing: 0.5px;
+        }
+        .verify > summary { color: var(--green-ok); }
+        .trouble > summary { color: var(--amber); }
+        .verify > summary::before { content: "[OK] "; font-weight: bold; }
+        .trouble > summary::before { content: "[!!] "; font-weight: bold; }
+
+        .verify > summary::after, .trouble > summary::after {
+            content: ""; margin-left: auto;
+            width: 0; height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid currentColor;
+            opacity: 0.7;
+        }
+        details[open] > summary::after { transform: rotate(180deg); }
+        details > summary::-webkit-details-marker { display: none; }
+
+        .verify > div, .trouble > div {
+            padding: 16px; border-top: 1px solid var(--border);
+            background: var(--bg);
+        }
+        .verify > div ul, .trouble > div ul { margin: 0; padding: 0; list-style: none; }
+        .verify > div li, .trouble > div li {
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 10px; font-size: 13px;
+        }
+        .verify > div li:last-child, .trouble > div li:last-child { border-bottom: none; }
+        .verify > div li::before { content: " OK "; color: #000; background: var(--green-ok); font-weight: bold; min-width: 36px; text-align: center; font-size: 11px; }
+        .trouble > div li::before { content: "WARN"; color: #000; background: var(--amber); font-weight: bold; min-width: 36px; text-align: center; font-size: 11px; }
+
+        /* ===== VARIABLES PANEL ===== */
+        .variables-panel {
+            background: var(--bg2); border: 1px solid #aaaaaa;
+            padding: 14px; margin-bottom: 24px;
+        }
+        .variables-panel h4 {
+            font-size: 11px; color: #000088; background: #aaaaaa;
+            text-transform: uppercase; letter-spacing: 1px;
+            padding: 2px 6px; margin-bottom: 12px; font-weight: bold; display: block;
+        }
+        .var-inputs { display: flex; gap: 12px; flex-wrap: wrap; }
+        .var-input { display: flex; align-items: center; gap: 8px; }
+        .var-input label { font-size: 12px; color: var(--text-dim); font-weight: bold; }
+        .var-input input {
+            background: #000033; border: 1px solid #aaaaaa;
+            color: var(--hal); padding: 4px 8px;
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            font-size: 12px; min-width: 160px; letter-spacing: 0.5px;
+        }
+        .var-input input:focus { outline: none; border-color: var(--hal); box-shadow: 0 0 0 1px var(--hal); }
+
+        /* ===== CODE BLOCKS ===== */
+        .code-block {
+            background: #000000; border: 1px solid #4444cc;
+            padding: 14px; margin: 12px 0; overflow-x: auto;
+            position: relative;
+            font-family: 'Share Tech Mono', 'Courier New', Courier, monospace;
+            font-size: 13px; line-height: 1.5;
+        }
+        .code-block code { display: block; color: var(--hal); word-wrap: break-word; white-space: pre-wrap; }
+        .code-block .cm   { color: #666666; }
+        .code-block .str  { color: #55ff55; }
+        .code-block .key  { color: #55ffff; }
+        .code-block .flag { color: #ff9900; }
+
+        .copy-btn {
+            position: absolute; top: 8px; right: 8px;
+            background: #000055; color: var(--text-dim);
+            border: 1px solid #4444cc;
+            padding: 4px 10px; cursor: pointer; font-size: 11px;
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            font-weight: bold; letter-spacing: 1px; transition: all 0.1s;
+        }
+        .copy-btn:hover { background: #0000cc; color: var(--hal); border-color: var(--hal); }
+        .copy-btn.copied { background: #005500; color: var(--green-ok); border-color: var(--green-ok); }
+
+        /* ===== TABLES ===== */
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+        table th {
+            background: #aaaaaa; color: #0000aa;
+            padding: 8px 12px; text-align: left; font-weight: bold;
+            font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+            border-bottom: 2px solid #888888;
+        }
+        table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+        table tr:hover { background: var(--bg2); }
+
+        a { color: var(--blue-bright); }
+        a:hover { color: var(--hal); }
+
+        /* ===== MOBILE TOGGLE ===== */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            top: calc(var(--topnav-h) + 8px);
+            left: 10px;
+            width: 38px; height: 38px;
+            background: #000088; border: 2px solid #aaaaaa;
+            color: var(--text); font-size: 16px; cursor: pointer; z-index: 101;
+            align-items: center; justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: calc(-1 * var(--sidebar-w));
+                top: var(--topnav-h);
+                height: calc(100vh - var(--topnav-h));
+                transition: left 0.3s;
+                z-index: 102;
+            }
+            .sidebar.open { left: 0; }
+            .main { margin-left: 0; }
+            .mobile-toggle { display: flex; }
+            .header { padding: 14px 20px; }
+            .header h1 { font-size: 16px; }
+
+            .content { padding: 0 16px 60px; }
+            .var-inputs { flex-direction: column; }
+            .var-input { width: 100%; }
+            .var-input input { flex: 1; min-width: 0; }
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg2); }
+        ::-webkit-scrollbar-thumb { background: #4444cc; border-radius: 0; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--hal-dim); }
+    </style>
+</head>
+<body>
+
+<!-- ══ TOPNAV ═══════════════════════════ -->
+<div class="topnav">
+    <span class="topnav-brand">HAL-1000</span>
+    <nav class="topnav-links">
+        <a href="pi-homelab-guide.html" class="topnav-link">Pi Setup</a>
+        <a href="traefik-guide.html" class="topnav-link">Traefik</a>
+        <a href="hal-verification.html" class="topnav-link active">Verification</a>
+    </nav>
+</div>
+
+    <button class="mobile-toggle" id="mobileToggle">☰</button>
+
+    <div class="container">
+    <div class="sidebar" id="sidebar">
+        <a href="#" class="hal-logo">HAL-1000 DIAGNOSTIC v1.0</a>
+
+        <div class="nav-section">
+            <div class="nav-label">Diagnosis</div>
+            <div class="nav-links">
+                <a href="#why-ads">Why Am I Seeing Ads?</a>
+                <a href="#check-eero">Eero DNS Check</a>
+                <a href="#check-pihole">Pi-hole Container</a>
+                <a href="#check-dns">DNS Resolution</a>
+                <a href="#check-blocking">Blocking Test</a>
+                <a href="#check-traefik">Traefik Check</a>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Reference</div>
+            <div class="nav-links">
+                <a href="#commands">Command Reference</a>
+                <a href="#limitations">Pi-hole Limitations</a>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            HAL-1000 DIAGNOSTIC UTILITY<br/>
+            Last updated: 2026-04-12
+        </div>
+
+        <div class="acc-panel">
+            <span class="acc-panel-label">Display</span>
+            <div class="acc-row">
+                <span class="acc-tag">Theme</span>
+                <button class="acc-btn" id="themeToggle">DARK</button>
+            </div>
+            <div class="acc-row">
+                <span class="acc-tag">Text</span>
+                <div class="font-controls">
+                    <button class="acc-btn acc-sq" id="fontDown" title="Decrease font size">A-</button>
+                    <span class="font-label" id="fontSizeLabel">100%</span>
+                    <button class="acc-btn acc-sq" id="fontUp" title="Increase font size">A+</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <h1>HAL-1000 DIAGNOSTIC UTILITY v1.0</h1>
+            <p>C:\HAL&gt; RUNNING SYSTEM HEALTH CHECK &amp; TROUBLESHOOTING DIAGNOSTICS...</p>
+        </div>
+
+        <div class="content">
+            <!-- START HERE SECTION -->
+            <section id="why-ads">
+                <h2>Why Am I Still Seeing Ads?</h2>
+
+                <div class="start-here">
+                    <h3>🔍 Start Here: Quick DNS Check</h3>
+                    <p>Run these two commands in your Mac Terminal right now:</p>
+                    <div class="code-block">
+<code><span class="key">nslookup</span> google.com
+<span class="key">nslookup</span> ads.doubleclick.net</code>
+                    </div>
+                    <p><strong>What to look for:</strong></p>
+                    <ul>
+                        <li>The <code>Server:</code> line should show your Pi-hole's IP (e.g., <code>192.168.4.2</code>). If it shows <code>1.1.1.1</code>, <code>8.8.8.8</code>, or anything else, DNS is bypassing Pi-hole entirely.</li>
+                        <li>For <code>ads.doubleclick.net</code>: If Pi-hole is working, it should return <code>0.0.0.0</code> or <code>NXDOMAIN</code>. If it returns a real IP address, Pi-hole isn't blocking it.</li>
+                    </ul>
+                </div>
+
+                <h3>The 5 Most Common Reasons Pi-hole Isn't Blocking Ads</h3>
+
+                <h3>1. ⚠️ eero Secure/Plus is overriding your DNS</h3>
+                <p>
+                    <strong>The problem:</strong> eero has its own DNS filtering service. When you enable eero Secure or eero Plus with Advanced Security enabled, it intercepts all DNS queries network-wide and blocks the ones it knows about. Your custom DNS setting is effectively ignored.
+                </p>
+                <p><strong>Symptom:</strong> Pi-hole's Query Log shows 0 queries, or only a few from your Mac. Most devices don't appear in the log at all.</p>
+                <p><strong>Fix:</strong> In the eero app, go to Menu → Network Settings → Advanced Settings → DNS, and check if Advanced Security is enabled. If so, toggle it OFF. You'll see a message like "Advanced Security has been disabled." Wait 2-3 minutes for the change to propagate to all devices.</p>
+
+                <h3>2. 🔌 The device isn't using Pi-hole's DNS</h3>
+                <p>
+                    <strong>The problem:</strong> Your device has a different DNS server configured, either from a hardcoded setting, an old DHCP lease, or because it's using DNS-over-HTTPS.
+                </p>
+                <p><strong>Symptom:</strong> <code>nslookup</code> on that specific device shows a different server than Pi-hole's IP. The Pi-hole query log doesn't show queries from that device.</p>
+                <p><strong>Fix:</strong>
+                    <ul>
+                        <li>First, try refreshing the device's DHCP lease by toggling Wi-Fi off/on</li>
+                        <li>Check the device's Settings → Wi-Fi → Advanced DNS settings and ensure it's set to DHCP (automatic) or explicitly to Pi-hole's IP</li>
+                        <li>Some apps ignore system DNS and use hardcoded resolvers (Firefox, some game clients). See section on DNS-over-HTTPS below.</li>
+                    </ul>
+                </p>
+
+                <h3>3. 🔴 Pi-hole container is down</h3>
+                <p>
+                    <strong>The problem:</strong> The Docker container crashed, the Raspberry Pi rebooted, or the container doesn't have a restart policy.
+                </p>
+                <p><strong>Symptom:</strong> You can't reach the Pi-hole admin dashboard. SSH to the Pi and run <code>docker ps | grep pihole</code> — the container doesn't appear in the list.</p>
+                <p><strong>Fix:</strong> SSH into your Pi and restart the container:
+                    <div class="code-block">
+<code><span class="key">cd ~/homelab/pihole</span>
+<span class="key">docker compose up -d</span></code>
+                    </div>
+                </p>
+
+                <h3>4. 📺 The ad isn't DNS-based (first-party ads)</h3>
+                <p>
+                    <strong>The problem:</strong> Some ads are served from the same domain as the content itself. YouTube ads, Spotify ads, and Reddit's promoted posts all come from the content provider's own servers. Pi-hole cannot block these without breaking the service.
+                </p>
+                <p><strong>Symptom:</strong> You see ads on YouTube, Spotify, Reddit, or streaming services, and the Pi-hole query log shows the domain is NOT being blocked.</p>
+                <p><strong>Fix:</strong> None. This is a limitation of DNS-based blocking. These services have decided that this is part of their business model, and it's not possible to block without a subscription (YouTube Premium, Spotify Premium, etc.).</p>
+
+                <h3>5. 🔐 App is using DNS-over-HTTPS (DoH)</h3>
+                <p>
+                    <strong>The problem:</strong> Firefox (and some other apps) send DNS queries encrypted directly to a hardcoded resolver, completely bypassing your network's DNS configuration.
+                </p>
+                <p><strong>Symptom:</strong> <code>nslookup</code> from your Mac shows Pi-hole, but Firefox is still seeing ads. The Pi-hole query log doesn't show any queries from Firefox.</p>
+                <p><strong>Fix:</strong> In Firefox:
+                    <ol>
+                        <li>Settings → Privacy & Security</li>
+                        <li>Scroll down to "DNS over HTTPS"</li>
+                        <li>Change from "Default Protection" to "Off"</li>
+                        <li>Restart Firefox</li>
+                    </ol>
+                </p>
+                <p>Chrome uses Secure DNS but respects your system's DNS configuration — no change needed.</p>
+            </section>
+
+            <!-- LAYER 1: EERO DNS CHECK -->
+            <section id="check-eero">
+                <h2>Layer 1: Eero DNS Verification</h2>
+
+                <h3>Step 1: Confirm Custom DNS in eero</h3>
+                <ol>
+                    <li>Open the <strong>eero app</strong> on your phone</li>
+                    <li>Tap the <strong>Menu</strong> (hamburger icon)</li>
+                    <li>Go to <strong>Network Settings</strong> → <strong>Advanced Settings</strong> → <strong>DNS</strong></li>
+                    <li>Confirm it shows <strong>"Custom DNS"</strong> enabled</li>
+                    <li>The primary DNS should show your Pi-hole's IP (default <code>192.168.4.2</code>, or wherever you placed it)</li>
+                </ol>
+
+                <h3>Step 2: Check if eero Secure/Plus is interfering</h3>
+                <p>
+                    <strong>CRITICAL:</strong> If you have an eero Secure or eero Plus subscription:
+                </p>
+                <ol>
+                    <li>In the eero app, look for <strong>Security</strong> or <strong>Advanced Security</strong> settings</li>
+                    <li>Check if it says "Advanced Security: ON" or similar</li>
+                    <li><strong>If enabled, toggle it OFF.</strong> eero's own DNS filtering will override your custom DNS</li>
+                    <li>Confirm the message: "Advanced Security has been disabled" or similar</li>
+                    <li>Wait <strong>2-3 minutes</strong> for the change to propagate</li>
+                </ol>
+
+                <details class="verify">
+                    <summary>Eero DNS Verification Checklist</summary>
+                    <div>
+                        <ul>
+                            <li>Custom DNS is enabled in eero</li>
+                            <li>Primary DNS shows Pi-hole's IP</li>
+                            <li>eero Secure/Plus Advanced Security is OFF</li>
+                            <li><code>scutil --dns | grep nameserver</code> on Mac shows Pi-hole IP</li>
+                            <li>All devices have reconnected to Wi-Fi since the change</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <h3>Step 3: Verify from Mac Terminal</h3>
+                <div class="code-block">
+<code><span class="key">scutil --dns</span> <span class="cm"># Look for nameserver entries</span></code>
+                </div>
+                <p>You should see your Pi-hole's IP listed under nameserver. If you see <code>8.8.8.8</code>, <code>1.1.1.1</code>, or other public DNS servers, the network DNS isn't pointing to Pi-hole.</p>
+
+                <details class="trouble">
+                    <summary>Eero DNS not pointing to Pi-hole?</summary>
+                    <div>
+                        <ul>
+                            <li>Double-check the IP address in eero DNS settings (typo?)</li>
+                            <li>Disconnect and reconnect all devices to Wi-Fi</li>
+                            <li>Toggle eero Secure OFF if you have it enabled</li>
+                            <li>Restart the eero router (power off 30s, power on)</li>
+                            <li>Restart Pi-hole container: <code>docker compose down && docker compose up -d</code></li>
+                        </ul>
+                    </div>
+                </details>
+            </section>
+
+            <!-- LAYER 2: PI-HOLE CONTAINER CHECK -->
+            <section id="check-pihole">
+                <h2>Layer 2: Pi-hole Container Verification</h2>
+
+                <div class="variables-panel">
+                    <h4>Configuration Variables</h4>
+                    <div class="var-inputs">
+                        <div class="var-input">
+                            <label>Pi Hostname:</label>
+                            <input type="text" id="PI_IP" value="homelab.local" placeholder="homelab.local or IP">
+                        </div>
+                        <div class="var-input">
+                            <label>Pi User:</label>
+                            <input type="text" id="PI_USER" value="amervar" placeholder="amervar">
+                        </div>
+                        <div class="var-input">
+                            <label>Pi-hole IP:</label>
+                            <input type="text" id="PIHOLE_IP" value="192.168.4.2" placeholder="192.168.4.2">
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Step 1: Check Container Status</h3>
+                <p>SSH into your Raspberry Pi and verify Pi-hole is running:</p>
+                <div class="code-block">
+<code><span class="key">ssh</span> <span class="flag">-l</span> amervar@homelab.local
+<span class="key">docker ps</span> <span class="flag">|</span> <span class="key">grep</span> pihole</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p><strong>Expected output:</strong></p>
+                <div class="code-block">
+<code>CONTAINER ID   IMAGE                      STATUS          PORTS
+abc123d        pihole:latest              Up 2 hours      0.0.0.0:53->53/udp, :::53->53/udp</code>
+                </div>
+
+                <p>The status should say <code>Up X hours/minutes</code>. If it says <code>Exited</code> or doesn't appear, the container is not running.</p>
+
+                <h3>Step 2: Check Pi-hole Logs</h3>
+                <div class="code-block">
+<code><span class="key">docker logs pihole --tail</span> <span class="flag">50</span></code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p><strong>Look for:</strong> Any error messages or DNS startup logs. Pi-hole should log something like:</p>
+                <div class="code-block">
+<code><span class="cm">[services] pihole.service is enabled</span>
+<span class="cm">[DNS] Starting Pi-hole DNS server</span>
+<span class="cm">[DNS] Listening on port 53</span></code>
+                </div>
+
+                <h3>Step 3: Verify Port 53 is Bound</h3>
+                <p>DNS runs on port 53 (both TCP and UDP). Verify it's open:</p>
+                <div class="code-block">
+<code><span class="key">sudo ss -tlnp</span> <span class="flag">|</span> <span class="key">grep</span> :53
+<span class="key">sudo ss -ulnp</span> <span class="flag">|</span> <span class="key">grep</span> :53</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p><strong>Expected output (TCP):</strong> <code>LISTEN ... 0.0.0.0:53 ... docker-proxy</code></p>
+                <p><strong>Expected output (UDP):</strong> <code>UNCONN ... 0.0.0.0:53 ... docker-proxy</code></p>
+
+                <h3>Step 4: Access Pi-hole Admin Dashboard</h3>
+                <p>Open your browser and navigate to:</p>
+                <div class="code-block">
+<code>https://192.168.4.2/admin</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p><strong>Important:</strong> Pi-hole v6 uses HTTPS and has a self-signed certificate. Your browser will show a warning:</p>
+                <ul>
+                    <li><strong>Chrome/Edge:</strong> Click "Advanced" → "Proceed to [IP] (unsafe)"</li>
+                    <li><strong>Firefox:</strong> Click "Advanced..." → "Accept the Risk and Continue"</li>
+                    <li><strong>Safari:</strong> This warning cannot be bypassed in Safari. Use Chrome or Firefox</li>
+                </ul>
+
+                <details class="verify">
+                    <summary>Pi-hole Container Verification</summary>
+                    <div>
+                        <ul>
+                            <li><code>docker ps</code> shows pihole container with status "Up"</li>
+                            <li>Container logs show DNS server started successfully</li>
+                            <li>Port 53 (TCP and UDP) is bound to docker-proxy</li>
+                            <li>Admin dashboard accessible at https://[PIHOLE_IP]/admin</li>
+                            <li>No recent container restarts (check logs for restart loops)</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="trouble">
+                    <summary>Pi-hole container not running?</summary>
+                    <div>
+                        <ul>
+                            <li><strong>Container not in docker ps:</strong> Run <code>docker compose up -d</code> from <code>~/homelab/pihole/</code></li>
+                            <li><strong>Container keeps restarting:</strong> Check logs with <code>docker logs pihole --tail 100</code> for errors</li>
+                            <li><strong>Port 53 already in use:</strong> Check <code>sudo ss -tlnp | grep :53</code>. If systemd-resolved is listening, see pi-homelab-guide.html for fix</li>
+                            <li><strong>Can't reach admin dashboard:</strong> Verify container is running and check firewall rules with <code>sudo ufw status</code></li>
+                        </ul>
+                    </div>
+                </details>
+            </section>
+
+            <!-- LAYER 3: DNS RESOLUTION CHECK -->
+            <section id="check-dns">
+                <h2>Layer 3: DNS Resolution Verification</h2>
+
+                <h3>What's Your Mac Using for DNS?</h3>
+                <p>Run this command in Terminal to see all DNS servers your Mac is configured to use:</p>
+                <div class="code-block">
+<code><span class="key">scutil --dns</span></code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p><strong>Look for:</strong> A section that lists your Pi-hole IP (e.g., <code>nameserver[0]: 192.168.4.2</code>). It should be the first entry.</p>
+
+                <h3>Test DNS Resolution to Google</h3>
+                <p>This should return a real IP address:</p>
+                <div class="code-block">
+<code><span class="key">nslookup google.com</span></code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p><strong>Expected output:</strong></p>
+                <div class="code-block">
+<code>Server:         192.168.4.2
+Address:        192.168.4.2#53
+
+Non-authoritative answer:
+Name:   google.com
+Address: 142.251.41.14</code>
+                </div>
+
+                <p>The <code>Server</code> line must show your Pi-hole's IP. If it shows <code>1.1.1.1</code>, <code>8.8.8.8</code>, or your ISP's DNS, queries are bypassing Pi-hole.</p>
+
+                <h3>More Detailed Query with dig</h3>
+                <p>For more verbose output, use <code>dig</code> and specify the Pi-hole IP directly:</p>
+                <div class="code-block">
+<code><span class="key">dig google.com</span> <span class="flag">@192.168.4.2</span></code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p>This forces a query directly to your Pi-hole IP. Look for the <code>ANSWER SECTION</code> with the real IP.</p>
+
+                <h3>Monitor Real-Time Queries in Pi-hole</h3>
+                <p>Open the Pi-hole admin dashboard at <code>https://192.168.4.2/admin</code> and go to:</p>
+                <ol>
+                    <li><strong>Query Log</strong> tab</li>
+                    <li>Run <code>nslookup google.com</code> in Terminal again</li>
+                    <li>Watch the Query Log — it should show a new entry for google.com within seconds</li>
+                </ol>
+
+                <p>If queries don't appear in the log, they're not reaching Pi-hole at all. Check Layer 1 (eero DNS) and Layer 2 (container status).</p>
+
+                <h3>Flush Your Mac's DNS Cache</h3>
+                <p>If you've recently changed DNS settings, flush the cache:</p>
+                <div class="code-block">
+<code><span class="key">sudo killall -HUP mDNSResponder</span></code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p>Or simply toggle Wi-Fi off/on, which forces a fresh DHCP lease and picks up new DNS servers.</p>
+
+                <details class="verify">
+                    <summary>DNS Resolution Verification</summary>
+                    <div>
+                        <ul>
+                            <li><code>scutil --dns</code> shows Pi-hole IP as nameserver</li>
+                            <li><code>nslookup google.com</code> returns real IP from Pi-hole's server</li>
+                            <li><code>dig</code> query to Pi-hole directly works</li>
+                            <li>Queries appear in Pi-hole Query Log in real time</li>
+                            <li>DNS cache flushed on Mac after changes</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="trouble">
+                    <summary>DNS not resolving?</summary>
+                    <div>
+                        <ul>
+                            <li><strong>nslookup shows wrong server IP:</strong> Check eero DNS settings and flush Mac DNS cache</li>
+                            <li><strong>Queries don't appear in Pi-hole log:</strong> Device may be using a different DNS server. Check device settings directly</li>
+                            <li><strong>dig returns "connection refused":</strong> Pi-hole port 53 is not open. Check Layer 2 and verify firewall</li>
+                            <li><strong>DNS resolution times out:</strong> Ping Pi-hole IP first to verify network connectivity: <code>ping 192.168.4.2</code></li>
+                        </ul>
+                    </div>
+                </details>
+            </section>
+
+            <!-- LAYER 4: BLOCKING TEST -->
+            <section id="check-blocking">
+                <h2>Layer 4: Ad Blocking Verification</h2>
+
+                <h3>The Definitive Block Test</h3>
+                <p>Run these commands in Terminal. If Pi-hole is working, the known ad domains should return <code>0.0.0.0</code> or <code>NXDOMAIN</code>:</p>
+
+                <div class="code-block">
+<code><span class="cm"># These SHOULD be blocked by Pi-hole</span>
+<span class="key">nslookup ads.doubleclick.net</span>
+<span class="key">nslookup pagead2.googlesyndication.com</span>
+<span class="key">nslookup www.googleadservices.com</span>
+<span class="key">nslookup ad.doubleclick.net</span>
+<span class="key">nslookup static.ads-twitter.com</span></code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <div class="code-block">
+<code><span class="cm"># These should return REAL IPs (not blocked)</span>
+<span class="key">nslookup google.com</span>
+<span class="key">nslookup apple.com</span>
+<span class="key">nslookup github.com</span></code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <h3>Reading Pi-hole's Response</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Response</th>
+                            <th>Meaning</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>0.0.0.0</code> or <code>::</code></td>
+                            <td>Domain blocked by Pi-hole</td>
+                            <td>✓ Working</td>
+                        </tr>
+                        <tr>
+                            <td><code>NXDOMAIN</code></td>
+                            <td>Non-existent domain (blocked)</td>
+                            <td>✓ Working</td>
+                        </tr>
+                        <tr>
+                            <td>Real IP address (e.g., <code>142.251.41.14</code>)</td>
+                            <td>Domain not blocked</td>
+                            <td>⚠ Not blocked (could be legitimate or not on blocklists)</td>
+                        </tr>
+                        <tr>
+                            <td>Different server (1.1.1.1, 8.8.8.8, etc.)</td>
+                            <td>Pi-hole is not handling the query</td>
+                            <td>✗ Pi-hole bypassed</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Check Pi-hole's Query Log</h3>
+                <p>For more details, check the Pi-hole admin dashboard:</p>
+                <ol>
+                    <li>Open <code>https://192.168.4.2/admin</code></li>
+                    <li>Go to <strong>Query Log</strong></li>
+                    <li>Look for the domains you just queried</li>
+                    <li>Domains with a 🚫 icon (or red highlight) are blocked</li>
+                    <li>Domains with a ✓ (or green highlight) are allowed</li>
+                </ol>
+
+                <h3>⚠️ Important: First-Party Ads Cannot Be Blocked</h3>
+                <p>
+                    If you see ads still appearing on YouTube, Spotify, Reddit, or streaming services, this is expected. These platforms serve ads from their own domains (first-party ads), and Pi-hole cannot block them without breaking the service. Pi-hole is most effective for:
+                </p>
+                <ul>
+                    <li>Third-party banner ads on websites</li>
+                    <li>Analytics and tracking domains</li>
+                    <li>Ads on IoT devices, smart TVs, and apps</li>
+                    <li>Blocking entire ad networks (DoubleClick, Google Ads, etc.)</li>
+                </ul>
+
+                <details class="verify">
+                    <summary>Ad Blocking Verification</summary>
+                    <div>
+                        <ul>
+                            <li>Known ad domains return <code>0.0.0.0</code> or <code>NXDOMAIN</code></li>
+                            <li>Legitimate domains return real IP addresses</li>
+                            <li>Server line in nslookup output shows Pi-hole's IP</li>
+                            <li>Query Log shows blocked domains with block indicators</li>
+                            <li>Blocklists are active in Pi-hole dashboard (Adlists section)</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="trouble">
+                    <summary>Ad domains not being blocked?</summary>
+                    <div>
+                        <ul>
+                            <li><strong>Ad domains return real IPs:</strong> Check if blocklists are disabled in Pi-hole dashboard</li>
+                            <li><strong>Query log shows domain but it's not marked as blocked:</strong> The domain may not be on any of your active blocklists. Add more lists in Adlists section</li>
+                            <li><strong>Query doesn't appear in log at all:</strong> Query is not reaching Pi-hole. Check Layer 1-3</li>
+                            <li><strong>Still seeing ads on YouTube/Spotify:</strong> These are first-party ads. Pi-hole cannot block them. This is expected behavior</li>
+                        </ul>
+                    </div>
+                </details>
+            </section>
+
+            <!-- LAYER 5: TRAEFIK CHECK -->
+            <section id="check-traefik">
+                <h2>Layer 5: Traefik Reverse Proxy Verification</h2>
+
+                <h3>Check Traefik Container Status</h3>
+                <p>SSH into your Pi and verify Traefik is running:</p>
+                <div class="code-block">
+<code><span class="key">ssh</span> <span class="flag">-l</span> amervar@homelab.local
+<span class="key">docker ps</span> <span class="flag">|</span> <span class="key">grep traefik</span></code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p><strong>Expected output:</strong> Container should show status <code>Up</code> and expose ports like <code>0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp</code>.</p>
+
+                <h3>Check Traefik Logs</h3>
+                <div class="code-block">
+<code><span class="key">docker logs traefik --tail</span> <span class="flag">30</span></code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p><strong>Look for:</strong> Any startup errors or warnings. Traefik should show something like:</p>
+                <div class="code-block">
+<code><span class="cm">msg=Starting Traefik version=v3.x.x</span>
+<span class="cm">msg=Starting provider: docker</span></code>
+                </div>
+
+                <h3>Verify Ports 80 and 443 Are Bound</h3>
+                <p>Check that HTTP and HTTPS ports are open:</p>
+                <div class="code-block">
+<code><span class="key">sudo ss -tlnp</span> <span class="flag">|</span> <span class="key">grep</span> :<span class="flag">80</span>
+<span class="key">sudo ss -tlnp</span> <span class="flag">|</span> <span class="key">grep</span> :<span class="flag">443</span></code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p><strong>Expected output:</strong> <code>LISTEN ... 0.0.0.0:80 ... docker-proxy</code> and similar for 443.</p>
+
+                <h3>Access Traefik Dashboard</h3>
+                <p>Open your browser and navigate to:</p>
+                <div class="code-block">
+<code>http://192.168.4.100:8080</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p>The Traefik dashboard should show:</p>
+                <ul>
+                    <li><strong>HTTP Routers:</strong> All configured routes (including Pi-hole if you've added labels)</li>
+                    <li><strong>Services:</strong> All Docker services Traefik is aware of</li>
+                    <li><strong>Middlewares:</strong> Any auth or request modification rules</li>
+                </ul>
+
+                <h3>Check Pi-hole Routing (if configured)</h3>
+                <p>If you've added Traefik labels to the Pi-hole container, it should appear in the dashboard. SSH to the Pi and check the docker-compose.yml:</p>
+                <div class="code-block">
+<code><span class="key">cat ~/homelab/pihole/docker-compose.yml</span> <span class="flag">|</span> <span class="key">grep -A5</span> labels</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <p>You should see labels like:</p>
+                <div class="code-block">
+<code>labels:
+  - <span class="str">"traefik.enable=true"</span>
+  - <span class="str">"traefik.http.routers.pihole.rule=Host(\"pi-hole.local\")"</span>
+  - <span class="str">"traefik.http.services.pihole.loadbalancer.server.port=80"</span></code>
+                </div>
+
+                <h3>Quick Traefik API Check</h3>
+                <p>Get detailed JSON info about Traefik's configuration:</p>
+                <div class="code-block">
+<code><span class="key">curl http://192.168.4.100:8080/api/rawdata</span> <span class="flag">|</span> <span class="key">python3 -m json.tool</span> <span class="flag">|</span> <span class="key">head -50</span></code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+
+                <details class="verify">
+                    <summary>Traefik Verification</summary>
+                    <div>
+                        <ul>
+                            <li><code>docker ps</code> shows traefik container with status "Up"</li>
+                            <li>Container logs show successful startup (no errors)</li>
+                            <li>Ports 80 and 443 are bound to docker-proxy</li>
+                            <li>Dashboard accessible at http://192.168.4.100:8080</li>
+                            <li>Traefik can see Docker services (check HTTP Routers/Services tabs)</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="trouble">
+                    <summary>Traefik not working?</summary>
+                    <div>
+                        <ul>
+                            <li><strong>Container not running:</strong> Run <code>docker compose up -d</code> from the Traefik directory</li>
+                            <li><strong>Dashboard unreachable:</strong> Verify container is running and port 8080 is accessible</li>
+                            <li><strong>Services not appearing in dashboard:</strong> Check that Docker daemon is accessible in docker-compose.yml (volume mount to /var/run/docker.sock)</li>
+                            <li><strong>Port 80/443 in use:</strong> Check what's using them with <code>sudo lsof -i :80</code></li>
+                            <li><strong>Routers not found:</strong> Verify labels are correctly formatted in service docker-compose.yml</li>
+                        </ul>
+                    </div>
+                </details>
+            </section>
+
+            <!-- QUICK REFERENCE -->
+            <section id="commands">
+                <h2>Quick Command Reference</h2>
+
+                <p>A cheat sheet of the most useful diagnostic commands for HAL-1000 troubleshooting:</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Command</th>
+                            <th>Run From</th>
+                            <th>What It Checks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>docker ps</code></td>
+                            <td>Pi SSH</td>
+                            <td>All running containers and their status</td>
+                        </tr>
+                        <tr>
+                            <td><code>docker logs [name] --tail 50</code></td>
+                            <td>Pi SSH</td>
+                            <td>Recent logs from a specific container</td>
+                        </tr>
+                        <tr>
+                            <td><code>docker compose up -d</code></td>
+                            <td>Pi SSH (service directory)</td>
+                            <td>Start or restart a service</td>
+                        </tr>
+                        <tr>
+                            <td><code>docker compose down</code></td>
+                            <td>Pi SSH (service directory)</td>
+                            <td>Stop a service completely</td>
+                        </tr>
+                        <tr>
+                            <td><code>docker compose pull && docker compose up -d</code></td>
+                            <td>Pi SSH (service directory)</td>
+                            <td>Update service to latest image and restart</td>
+                        </tr>
+                        <tr>
+                            <td><code>sudo ss -tlnp</code></td>
+                            <td>Pi SSH</td>
+                            <td>All open TCP listening ports</td>
+                        </tr>
+                        <tr>
+                            <td><code>sudo ss -ulnp</code></td>
+                            <td>Pi SSH</td>
+                            <td>All open UDP listening ports</td>
+                        </tr>
+                        <tr>
+                            <td><code>scutil --dns</code></td>
+                            <td>Mac Terminal</td>
+                            <td>Mac's current DNS servers</td>
+                        </tr>
+                        <tr>
+                            <td><code>nslookup [domain]</code></td>
+                            <td>Mac Terminal</td>
+                            <td>DNS resolution and which server answered</td>
+                        </tr>
+                        <tr>
+                            <td><code>dig [domain] @[ip]</code></td>
+                            <td>Mac Terminal</td>
+                            <td>Direct DNS query to specific server</td>
+                        </tr>
+                        <tr>
+                            <td><code>ping [ip]</code></td>
+                            <td>Mac Terminal or Pi SSH</td>
+                            <td>Network connectivity to a host</td>
+                        </tr>
+                        <tr>
+                            <td><code>sudo killall -HUP mDNSResponder</code></td>
+                            <td>Mac Terminal</td>
+                            <td>Flush Mac DNS cache</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- LIMITATIONS -->
+            <section id="limitations">
+                <h2>What Pi-hole Cannot Block</h2>
+
+                <p>
+                    Pi-hole is powerful, but it has limitations. Understanding what it can't do helps you set realistic expectations and avoid spending hours debugging what's actually expected behavior.
+                </p>
+
+                <h3>1. First-Party Ads</h3>
+                <p>
+                    <strong>YouTube ads, Spotify ads, Reddit promoted posts, streaming service ads</strong>
+                </p>
+                <p>
+                    These platforms serve ads from the same domain as the content itself. For example, <code>youtube.com</code> serves both content and ads, so Pi-hole cannot block one without breaking the other. This is intentional on their part — they've moved to first-party ads specifically to avoid DNS-based blocking.
+                </p>
+                <p><strong>Fix:</strong> Use premium subscriptions (YouTube Premium, Spotify Premium, etc.) or accept ads as part of the service.</p>
+
+                <h3>2. DNS-over-HTTPS (DoH)</h3>
+                <p>
+                    <strong>Firefox, some mobile apps, some game clients</strong>
+                </p>
+                <p>
+                    Some applications send DNS queries encrypted directly to a hardcoded resolver (usually Cloudflare, Google, or Quad9), completely bypassing your network DNS. Pi-hole never even sees these queries.
+                </p>
+                <p><strong>Most Common:</strong> Firefox has DoH enabled by default.</p>
+                <p><strong>Fix:</strong>
+                    <ul>
+                        <li>Firefox: Settings → Privacy & Security → "DNS over HTTPS" → set to "Off"</li>
+                        <li>Chrome: Respects system DNS by default (no change needed)</li>
+                        <li>Mobile apps: Usually no way to disable. Accept that Pi-hole won't affect these.</li>
+                    </ul>
+                </p>
+
+                <h3>3. HTTPS-Based Ad Trackers with Certificate Pinning</h3>
+                <p>
+                    <strong>Some enterprise tracking pixels, ad servers with pinned certificates</strong>
+                </p>
+                <p>
+                    If an app has the IP address of an ad server cached internally or uses certificate pinning, it bypasses DNS entirely. The request goes directly to the IP without a DNS lookup.
+                </p>
+                <p><strong>Fix:</strong> None on the network level. These require app-level changes or blocking at a lower level (firewall rules by IP).</p>
+
+                <h3>4. Local Network Ads (Bundled or Pre-Cached)</h3>
+                <p>
+                    <strong>App ads that don't make DNS queries, local data files with ad content</strong>
+                </p>
+                <p>
+                    Some apps have advertisements bundled into them or cached locally. They never make a DNS query, so Pi-hole has no way to interfere.
+                </p>
+                <p><strong>Examples:</strong> Mobile game ads, embedded webviews with local content.</p>
+                <p><strong>Fix:</strong> Remove or downgrade the app, or pay for a premium version.</p>
+
+                <h3>5. Streaming Platform Ads</h3>
+                <p>
+                    <strong>Peacock, Paramount+, Hulu, Disney+, Amazon Prime, etc.</strong>
+                </p>
+                <p>
+                    Most streaming services now serve ads from their own CDN infrastructure with domain names that are impossible to distinguish from content. Blocking them would break the service entirely. They've specifically designed their systems to avoid DNS-based blocking.
+                </p>
+                <p><strong>Fix:</strong> Pay for ad-free tiers or accept ads.</p>
+
+                <h3>Pi-hole IS Effective For</h3>
+                <p>Despite its limitations, Pi-hole is excellent at blocking:</p>
+                <ul>
+                    <li>Third-party banner ads and display networks (Google Ads, DoubleClick, AppNexus, etc.)</li>
+                    <li>Analytics and tracking domains (Google Analytics, Facebook Pixel, etc.)</li>
+                    <li>Telemetry from smart TVs, phones, and IoT devices</li>
+                    <li>Malware and phishing domains</li>
+                    <li>Ads on lesser-known websites and apps</li>
+                </ul>
+
+                <h3>The Bottom Line</h3>
+                <p>
+                    Pi-hole reduces network-wide ad traffic by 20-40% in most homes, blocking ads on web browsing, IoT devices, and apps. It cannot block the 5 categories above without breaking services or requiring technological workarounds that are outside of DNS blocking.
+                </p>
+                <p>
+                    If you're seeing ads on YouTube, Spotify, or streaming services and Pi-hole is confirmed working (Layer 4 verification passes), that's expected behavior, not a problem with your setup.
+                </p>
+            </section>
+        </div>
+    </div>
+    </div><!-- /.container -->
+
+    <script>
+        // ===== ACCESSIBILITY CONTROLS =====
+        (function() {
+            const root       = document.documentElement;
+            const themeBtn   = document.getElementById('themeToggle');
+            const fontUpBtn  = document.getElementById('fontUp');
+            const fontDownBtn= document.getElementById('fontDown');
+            const fontLbl    = document.getElementById('fontSizeLabel');
+
+            const FONTS = [
+                { key: '',       label: '100%' },
+                { key: 'large',  label: '113%' },
+                { key: 'xlarge', label: '130%' },
+            ];
+            let fontIdx = 0;
+            let isLight = false;
+
+            const savedTheme = localStorage.getItem('hal-diag-theme');
+            const savedFont  = parseInt(localStorage.getItem('hal-diag-font') || '0', 10);
+
+            if (savedTheme === 'light') {
+                isLight = true;
+                root.setAttribute('data-theme', 'light');
+                themeBtn.textContent = 'LIGHT';
+                themeBtn.classList.add('active');
+            }
+
+            fontIdx = Math.min(Math.max(savedFont, 0), FONTS.length - 1);
+            function applyFont() {
+                const f = FONTS[fontIdx];
+                if (f.key) root.setAttribute('data-font', f.key);
+                else       root.removeAttribute('data-font');
+                fontLbl.textContent = f.label;
+                localStorage.setItem('hal-diag-font', fontIdx);
+                fontDownBtn.disabled = (fontIdx === 0);
+                fontUpBtn.disabled   = (fontIdx === FONTS.length - 1);
+            }
+            applyFont();
+
+            themeBtn.addEventListener('click', () => {
+                isLight = !isLight;
+                if (isLight) {
+                    root.setAttribute('data-theme', 'light');
+                    themeBtn.textContent = 'LIGHT';
+                    themeBtn.classList.add('active');
+                    localStorage.setItem('hal-diag-theme', 'light');
+                } else {
+                    root.removeAttribute('data-theme');
+                    themeBtn.textContent = 'DARK';
+                    themeBtn.classList.remove('active');
+                    localStorage.setItem('hal-diag-theme', 'dark');
+                }
+            });
+
+            fontUpBtn.addEventListener('click',   () => { if (fontIdx < FONTS.length-1) { fontIdx++; applyFont(); } });
+            fontDownBtn.addEventListener('click', () => { if (fontIdx > 0)               { fontIdx--; applyFont(); } });
+        })();
+
+        // ===== MOBILE TOGGLE =====
+        const mobileToggle = document.getElementById('mobileToggle');
+        const sidebar = document.getElementById('sidebar');
+
+        mobileToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+
+        // Close sidebar when clicking a nav link
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+            });
+        });
+
+        // ===== SCROLL SPY =====
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-links a');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (window.pageYOffset >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').slice(1) === current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // ===== COPY CODE BLOCKS =====
+        function copyCode(button) {
+            const codeBlock = button.parentElement;
+            const code = codeBlock.querySelector('code').innerText;
+
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Copy failed:', err);
+            });
+        }
+
+        // ===== VARIABLE SUBSTITUTION =====
+        const piIpInput = document.getElementById('PI_IP');
+        const piUserInput = document.getElementById('PI_USER');
+        const piholeIpInput = document.getElementById('PIHOLE_IP');
+
+        const updateCodeBlocks = () => {
+            const PI_IP = piIpInput.value;
+            const PI_USER = piUserInput.value;
+            const PIHOLE_IP = piholeIpInput.value;
+
+            document.querySelectorAll('.code-block code').forEach(codeBlock => {
+                let originalText = codeBlock.getAttribute('data-original');
+                if (!originalText) {
+                    originalText = codeBlock.innerText;
+                    codeBlock.setAttribute('data-original', originalText);
+                }
+
+                let newText = originalText
+                    .replace(/amervar/g, PI_USER)
+                    .replace(/homelab\.local/g, PI_IP)
+                    .replace(/192\.168\.4\.2/g, PIHOLE_IP)
+                    .replace(/192\.168\.4\.100/g, PI_IP);
+
+                // Parse and re-apply syntax highlighting
+                codeBlock.innerText = newText;
+                syntaxHighlight(codeBlock);
+            });
+        };
+
+        const syntaxHighlight = (codeBlock) => {
+            const text = codeBlock.innerText;
+            let html = text;
+
+            // Simple syntax highlighting
+            html = html.replace(/^#.*/gm, '<span class="cm">$&</span>');
+            html = html.replace(/\b(ssh|nslookup|dig|docker|sudo|curl|python3|scutil|killall|grep|cat|head)\b/g, '<span class="key">$1</span>');
+            html = html.replace(/\s(-[a-zA-Z]+)/g, ' <span class="flag">$1</span>');
+            html = html.replace(/(['"])([^'"]*)\1/g, '<span class="str">$&</span>');
+
+            codeBlock.innerHTML = html;
+        };
+
+        piIpInput.addEventListener('change', updateCodeBlocks);
+        piUserInput.addEventListener('change', updateCodeBlocks);
+        piholeIpInput.addEventListener('change', updateCodeBlocks);
+
+        // Initial syntax highlighting
+        document.querySelectorAll('.code-block code').forEach(syntaxHighlight);
+    </script>
+</body>
+</html>
