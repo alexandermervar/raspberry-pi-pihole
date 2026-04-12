@@ -1,0 +1,25 @@
+# OS
+.DS_Store
+**/.DS_Store
+
+# Pi-hole databases — large, contain query history, regeneratable
+*.db
+*.db-shm
+*.db-wal
+
+# TLS certificates and private keys — never commit these
+*.pem
+*.key
+tls.crt
+tls_ca.crt
+
+# Pi-hole auth config — contains password hash
+pihole.toml
+cli_pwconfig_backup
+
+# Regeneratable / large Pi-hole artifacts
+config/pihole/lists/
+config/pihole/gravity_backups/
+config/pihole/Cache/
+config/pihole/migration_backup/
+config/pihole/dhcp.leases
