@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -514,14 +514,21 @@
         <a href="#" class="hal-logo">HAL-1000 DIAGNOSTIC v1.0</a>
 
         <div class="nav-section">
+            <div class="nav-label">Start Here</div>
+            <div class="nav-links">
+                <a href="#how-it-works">How DNS Works</a>
+                <a href="#why-ads">Why Ads Still Appear</a>
+            </div>
+        </div>
+
+        <div class="nav-section">
             <div class="nav-label">Diagnosis</div>
             <div class="nav-links">
-                <a href="#why-ads">Why Am I Seeing Ads?</a>
-                <a href="#check-eero">Eero DNS Check</a>
-                <a href="#check-pihole">Pi-hole Container</a>
-                <a href="#check-dns">DNS Resolution</a>
-                <a href="#check-blocking">Blocking Test</a>
-                <a href="#check-traefik">Traefik Check</a>
+                <a href="#check-eero">Layer 1: Eero DNS</a>
+                <a href="#check-pihole">Layer 2: Pi-hole</a>
+                <a href="#check-dns">Layer 3: DNS Resolution</a>
+                <a href="#check-blocking">Layer 4: Blocking</a>
+                <a href="#check-traefik">Layer 5: Traefik</a>
             </div>
         </div>
 
@@ -529,6 +536,7 @@
             <div class="nav-label">Reference</div>
             <div class="nav-links">
                 <a href="#commands">Command Reference</a>
+                <a href="#resources">Resources &amp; Learning</a>
                 <a href="#limitations">Pi-hole Limitations</a>
             </div>
         </div>
@@ -562,6 +570,33 @@
         </div>
 
         <div class="content">
+
+            <!-- HOW IT ALL WORKS -->
+            <section id="how-it-works" style="margin-bottom:30px;">
+                <h2>How Your DNS Pipeline Works</h2>
+                <p>
+                    Before troubleshooting, it helps to understand the chain of events every DNS query takes on your network.
+                    Every time a device asks "what's the IP for ads.doubleclick.net?", this is the exact path:
+                </p>
+                <div class="code-block" style="font-size:12px;">
+<code><span class="key">Device</span>  →  <span class="flag">eero router</span>  →  <span class="key">Pi-hole (192.168.4.2:53)</span>  →  <span class="str">upstream DNS (1.1.1.1 or 8.8.8.8)</span>
+
+If domain is on blocklist:   Pi-hole returns 0.0.0.0  →  Ad never loads
+If domain is NOT blocked:    Pi-hole forwards upstream →  Returns real IP</code>
+                </div>
+                <p>
+                    <strong>The diagnostic layers below match this pipeline.</strong> If anything in this chain is broken —
+                    eero not pointing to Pi-hole, Pi-hole container down, DNS bypassed by app — ads get through.
+                    Each layer builds on the previous one, so start at Layer 1 and work forward.
+                </p>
+                <p>
+                    <strong>Learn more:</strong>
+                    <a href="https://docs.pi-hole.net/" target="_blank" rel="noopener">Pi-hole Official Documentation</a> &nbsp;·&nbsp;
+                    <a href="https://docs.pi-hole.net/ftldns/dns-resolver/" target="_blank" rel="noopener">How Pi-hole resolves DNS</a> &nbsp;·&nbsp;
+                    <a href="https://howdns.works/" target="_blank" rel="noopener">How DNS Works (visual explainer)</a>
+                </p>
+            </section>
+
             <!-- START HERE SECTION -->
             <section id="why-ads">
                 <h2>Why Am I Still Seeing Ads?</h2>
@@ -641,6 +676,17 @@
             <section id="check-eero">
                 <h2>Layer 1: Eero DNS Verification</h2>
 
+                <div class="start-here">
+                    <h3>Why start here?</h3>
+                    <p>
+                        The eero router is the <strong>DHCP server</strong> for your entire network — it's the one that hands out IP addresses AND tells every device which DNS server to use. If eero is pointing devices to <code>8.8.8.8</code> instead of your Pi-hole, no amount of Pi-hole configuration will help. Every device on your network asks eero where to send DNS queries on startup.
+                    </p>
+                    <p>
+                        eero Secure/Plus is a special case: it intercepts all DNS queries at the router level, overriding your custom DNS setting entirely.
+                        <a href="https://support.eero.com/hc/en-us/articles/207556703-How-do-I-use-a-custom-DNS-with-eero" target="_blank" rel="noopener">eero custom DNS support docs →</a>
+                    </p>
+                </div>
+
                 <h3>Step 1: Confirm Custom DNS in eero</h3>
                 <ol>
                     <li>Open the <strong>eero app</strong> on your phone</li>
@@ -698,6 +744,19 @@
             <!-- LAYER 2: PI-HOLE CONTAINER CHECK -->
             <section id="check-pihole">
                 <h2>Layer 2: Pi-hole Container Verification</h2>
+
+                <div class="start-here">
+                    <h3>Why check the container?</h3>
+                    <p>
+                        Pi-hole runs as a <strong>Docker container</strong>. If the container crashes (power outage, OOM kill, bad config), port 53 stops listening and every DNS query fails network-wide — no websites load for anyone.
+                        <code>docker ps</code> shows all running containers; if pihole isn't listed, nothing is answering DNS.
+                    </p>
+                    <p>
+                        <strong>What you'll learn:</strong> How to read Docker container state, interpret startup logs, and verify a service is actually bound to a port.
+                        <a href="https://docs.docker.com/reference/cli/docker/container/ps/" target="_blank" rel="noopener">docker ps docs →</a> &nbsp;·&nbsp;
+                        <a href="https://docs.docker.com/reference/cli/docker/container/logs/" target="_blank" rel="noopener">docker logs docs →</a>
+                    </p>
+                </div>
 
                 <div class="variables-panel">
                     <h4>Configuration Variables</h4>
@@ -801,6 +860,20 @@ abc123d        pihole:latest              Up 2 hours      0.0.0.0:53->53/udp, ::
             <section id="check-dns">
                 <h2>Layer 3: DNS Resolution Verification</h2>
 
+                <div class="start-here">
+                    <h3>Why test DNS resolution from your Mac?</h3>
+                    <p>
+                        Layers 1 and 2 confirm <em>configuration</em>. Layer 3 confirms <em>actual behavior</em>. <code>nslookup</code> and <code>dig</code> are DNS diagnostic tools that show you <strong>exactly which server answered a query and what it said</strong>. These are the same tools network engineers use to debug DNS at any scale.
+                    </p>
+                    <p>
+                        <strong>Key concept:</strong> <code>nslookup domain</code> uses your system DNS (showing if Pi-hole is working end-to-end). <code>dig domain @192.168.4.2</code> queries Pi-hole directly (useful for isolating whether Pi-hole itself has an issue vs. your Mac not using it).
+                    </p>
+                    <p>
+                        <a href="https://linux.die.net/man/1/nslookup" target="_blank" rel="noopener">nslookup manual →</a> &nbsp;·&nbsp;
+                        <a href="https://linux.die.net/man/1/dig" target="_blank" rel="noopener">dig manual →</a>
+                    </p>
+                </div>
+
                 <h3>What's Your Mac Using for DNS?</h3>
                 <p>Run this command in Terminal to see all DNS servers your Mac is configured to use:</p>
                 <div class="code-block">
@@ -886,6 +959,20 @@ Address: 142.251.41.14</code>
             <!-- LAYER 4: BLOCKING TEST -->
             <section id="check-blocking">
                 <h2>Layer 4: Ad Blocking Verification</h2>
+
+                <div class="start-here">
+                    <h3>Why test with known ad domains?</h3>
+                    <p>
+                        Layers 1–3 confirm the DNS pipeline is intact. Layer 4 confirms Pi-hole is actually <em>blocking</em> using its blocklists. Pi-hole uses <strong>DNS sinkholing</strong>: instead of forwarding a blocked domain to an upstream resolver, it responds immediately with <code>0.0.0.0</code> (a null IP). The device never makes a real connection to the ad server.
+                    </p>
+                    <p>
+                        Testing with <code>ads.doubleclick.net</code> is reliable because it's on virtually every blocklist. If that domain returns a real IP, your blocklists are either disabled, empty, or Pi-hole isn't actually handling the query.
+                    </p>
+                    <p>
+                        <a href="https://docs.pi-hole.net/ftldns/blockingmode/" target="_blank" rel="noopener">Pi-hole blocking modes explained →</a> &nbsp;·&nbsp;
+                        <a href="https://firebog.net/" target="_blank" rel="noopener">The Firebog — curated Pi-hole blocklists →</a>
+                    </p>
+                </div>
 
                 <h3>The Definitive Block Test</h3>
                 <p>Run these commands in Terminal. If Pi-hole is working, the known ad domains should return <code>0.0.0.0</code> or <code>NXDOMAIN</code>:</p>
@@ -991,6 +1078,20 @@ Address: 142.251.41.14</code>
             <!-- LAYER 5: TRAEFIK CHECK -->
             <section id="check-traefik">
                 <h2>Layer 5: Traefik Reverse Proxy Verification</h2>
+
+                <div class="start-here">
+                    <h3>Why is Traefik separate from DNS?</h3>
+                    <p>
+                        Pi-hole handles <strong>which domains resolve</strong>. Traefik handles <strong>how HTTP/HTTPS requests are routed</strong> to services. They're complementary: Pi-hole blocks at the DNS layer before any connection is made, while Traefik routes legitimate traffic to the right container.
+                    </p>
+                    <p>
+                        Traefik reads Docker labels on containers to discover routes automatically — no manual config file updates needed when you add new services. If Traefik is down, services still run but you can't reach them by hostname (only by direct IP:port).
+                    </p>
+                    <p>
+                        <a href="https://doc.traefik.io/traefik/" target="_blank" rel="noopener">Traefik official docs →</a> &nbsp;·&nbsp;
+                        <a href="https://doc.traefik.io/traefik/providers/docker/" target="_blank" rel="noopener">Traefik Docker provider →</a>
+                    </p>
+                </div>
 
                 <h3>Check Traefik Container Status</h3>
                 <p>SSH into your Pi and verify Traefik is running:</p>
@@ -1166,6 +1267,49 @@ Address: 142.251.41.14</code>
                 </table>
             </section>
 
+            <!-- RESOURCES -->
+            <section id="resources">
+                <h2>Resources &amp; Further Learning</h2>
+
+                <p>The best way to build troubleshooting skills is to understand <em>why</em> each tool works, not just memorize the commands. These resources go deeper on the concepts you've used in this guide:</p>
+
+                <h3>Pi-hole</h3>
+                <ul>
+                    <li><a href="https://docs.pi-hole.net/" target="_blank" rel="noopener">Pi-hole Official Documentation</a> — comprehensive reference for all settings and concepts</li>
+                    <li><a href="https://docs.pi-hole.net/ftldns/" target="_blank" rel="noopener">FTL DNS — how Pi-hole's DNS resolver works</a> — explains the blocking engine, cache, and query processing</li>
+                    <li><a href="https://docs.pi-hole.net/ftldns/blockingmode/" target="_blank" rel="noopener">Blocking Modes</a> — why Pi-hole returns <code>0.0.0.0</code> vs <code>NXDOMAIN</code></li>
+                    <li><a href="https://firebog.net/" target="_blank" rel="noopener">The Firebog — curated blocklists</a> — the most trusted collection of Pi-hole compatible blocklists</li>
+                </ul>
+
+                <h3>DNS Fundamentals</h3>
+                <ul>
+                    <li><a href="https://howdns.works/" target="_blank" rel="noopener">howdns.works</a> — visual, step-by-step explanation of DNS resolution</li>
+                    <li><a href="https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/" target="_blank" rel="noopener">DNS-over-HTTPS explained (Cloudflare)</a> — understanding DoH and why it bypasses Pi-hole</li>
+                    <li><a href="https://linux.die.net/man/1/dig" target="_blank" rel="noopener">dig manual page</a> — the most powerful DNS diagnostic tool</li>
+                    <li><a href="https://linux.die.net/man/1/nslookup" target="_blank" rel="noopener">nslookup manual page</a></li>
+                </ul>
+
+                <h3>Docker</h3>
+                <ul>
+                    <li><a href="https://docs.docker.com/reference/cli/docker/container/ps/" target="_blank" rel="noopener">docker ps reference</a> — understanding container states and output columns</li>
+                    <li><a href="https://docs.docker.com/reference/cli/docker/container/logs/" target="_blank" rel="noopener">docker logs reference</a> — reading container output and understanding log streams</li>
+                    <li><a href="https://docs.docker.com/compose/reference/" target="_blank" rel="noopener">Docker Compose CLI reference</a></li>
+                </ul>
+
+                <h3>Traefik</h3>
+                <ul>
+                    <li><a href="https://doc.traefik.io/traefik/" target="_blank" rel="noopener">Traefik official docs</a> — full reference for v3</li>
+                    <li><a href="https://doc.traefik.io/traefik/providers/docker/" target="_blank" rel="noopener">Docker provider</a> — how Traefik auto-discovers routes from container labels</li>
+                    <li><a href="https://doc.traefik.io/traefik/observability/logs/" target="_blank" rel="noopener">Traefik access logs</a> — reading traffic logs for debugging</li>
+                </ul>
+
+                <h3>Other Guides in This Series</h3>
+                <ul>
+                    <li><a href="pi-homelab-guide.html">HAL-1000 Pi Setup Guide</a> — initial Pi configuration, Docker, Pi-hole, macvlan networking</li>
+                    <li><a href="traefik-guide.html">Traefik v3 Reverse Proxy Guide</a> — setting up Traefik, routing services, HTTPS</li>
+                </ul>
+            </section>
+
             <!-- LIMITATIONS -->
             <section id="limitations">
                 <h2>What Pi-hole Cannot Block</h2>
@@ -1269,11 +1413,14 @@ Address: 142.251.41.14</code>
             const savedTheme = localStorage.getItem('hal-diag-theme');
             const savedFont  = parseInt(localStorage.getItem('hal-diag-font') || '0', 10);
 
-            if (savedTheme === 'light') {
+            if (savedTheme !== 'dark') {
                 isLight = true;
                 root.setAttribute('data-theme', 'light');
                 themeBtn.textContent = 'LIGHT';
                 themeBtn.classList.add('active');
+            } else {
+                root.removeAttribute('data-theme');
+                themeBtn.textContent = 'DARK';
             }
 
             fontIdx = Math.min(Math.max(savedFont, 0), FONTS.length - 1);

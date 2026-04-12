@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2495,16 +2495,19 @@ document.querySelectorAll('.step').forEach(step => {
   let isLight  = false;
   let isHC     = false;
 
-  /* --- Restore saved prefs --- */
+  /* --- Restore saved prefs (default: light) --- */
   const savedTheme    = localStorage.getItem('hal-theme');
   const savedFont     = parseInt(localStorage.getItem('hal-font') || '0', 10);
   const savedContrast = localStorage.getItem('hal-contrast');
 
-  if (savedTheme === 'light') {
+  if (savedTheme !== 'dark') {
     isLight = true;
     root.setAttribute('data-theme', 'light');
     themeBtn.textContent = '☀ LIGHT';
     themeBtn.classList.add('active');
+  } else {
+    root.removeAttribute('data-theme');
+    themeBtn.textContent = '☾ DARK';
   }
 
   fontIdx = Math.min(Math.max(savedFont, 0), FONTS.length - 1);
