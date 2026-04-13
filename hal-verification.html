@@ -67,8 +67,11 @@
         html[data-theme="light"] .header h1 { color: #884400; }
         html[data-theme="light"] section h2 { background: #333366; color: #ffffff; }
         html[data-theme="light"] section h3 { color: #884400; }
-        html[data-theme="light"] .code-block { background: #e8e8e8; border-color: #888888; }
-        html[data-theme="light"] .code-block code { color: #000033; }
+        html[data-theme="light"] .code-block { background: #f8f8f8; border-color: #888888; }
+        html[data-theme="light"] .code-title { background: #333366; color: #ffffff; border-bottom-color: #222244; }
+        html[data-theme="light"] .copy-btn { border-color: #cccccc; color: #cccccc; }
+        html[data-theme="light"] .copy-btn:hover { border-color: #ffffff; color: #ffffff; }
+        html[data-theme="light"] .code-block pre { color: #000033; }
         html[data-theme="light"] .code-block .key { color: #0000cc; }
         html[data-theme="light"] .code-block .flag { color: #994400; }
         html[data-theme="light"] .code-block .str { color: #006600; }
@@ -419,27 +422,35 @@
         /* ===== CODE BLOCKS ===== */
         .code-block {
             background: #000000; border: 1px solid #4444cc;
-            padding: 14px; margin: 12px 0; overflow-x: auto;
-            position: relative;
+            margin: 12px 0; overflow: hidden;
             font-family: 'Share Tech Mono', 'Courier New', Courier, monospace;
             font-size: 13px; line-height: 1.5;
         }
-        .code-block code { display: block; color: var(--hal); word-wrap: break-word; white-space: pre-wrap; }
+        .code-title {
+            background: #aaaaaa; color: #000088;
+            padding: 4px 10px;
+            font-size: 11px; font-weight: bold;
+            letter-spacing: 1px; text-transform: uppercase;
+            border-bottom: 1px solid #888888;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .copy-btn {
+            background: none; border: 1px solid #000066;
+            color: #000066; padding: 2px 8px; cursor: pointer;
+            font-size: 10px; font-family: 'Share Tech Mono', 'Courier New', monospace;
+            font-weight: bold; letter-spacing: 1px;
+            transition: all 0.1s; flex-shrink: 0;
+        }
+        .copy-btn:hover { border-color: #000000; color: #000000; }
+        .copy-btn.copied { border-color: #005500; color: #005500; }
+        .code-block pre {
+            padding: 12px 14px; overflow-x: auto;
+            color: var(--hal); white-space: pre; line-height: 1.5;
+        }
         .code-block .cm   { color: #666666; }
         .code-block .str  { color: #55ff55; }
         .code-block .key  { color: #55ffff; }
         .code-block .flag { color: #ff9900; }
-
-        .copy-btn {
-            position: absolute; top: 8px; right: 8px;
-            background: #000055; color: var(--text-dim);
-            border: 1px solid #4444cc;
-            padding: 4px 10px; cursor: pointer; font-size: 11px;
-            font-family: 'Share Tech Mono', 'Courier New', monospace;
-            font-weight: bold; letter-spacing: 1px; transition: all 0.1s;
-        }
-        .copy-btn:hover { background: #0000cc; color: var(--hal); border-color: var(--hal); }
-        .copy-btn.copied { background: #005500; color: var(--green-ok); border-color: var(--green-ok); }
 
         /* ===== TABLES ===== */
         table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
@@ -579,10 +590,11 @@
                     Every time a device asks "what's the IP for ads.doubleclick.net?", this is the exact path:
                 </p>
                 <div class="code-block" style="font-size:12px;">
-<code><span class="key">Device</span>  →  <span class="flag">eero router</span>  →  <span class="key">Pi-hole (192.168.4.2:53)</span>  →  <span class="str">upstream DNS (1.1.1.1 or 8.8.8.8)</span>
+                  <div class="code-title">DNS PIPELINE</div>
+                  <pre><span class="key">Device</span>  →  <span class="flag">eero router</span>  →  <span class="key">Pi-hole (192.168.4.2:53)</span>  →  <span class="str">upstream DNS (1.1.1.1 or 8.8.8.8)</span>
 
 If domain is on blocklist:   Pi-hole returns 0.0.0.0  →  Ad never loads
-If domain is NOT blocked:    Pi-hole forwards upstream →  Returns real IP</code>
+If domain is NOT blocked:    Pi-hole forwards upstream →  Returns real IP</pre>
                 </div>
                 <p>
                     <strong>The diagnostic layers below match this pipeline.</strong> If anything in this chain is broken —
@@ -605,9 +617,10 @@ If domain is NOT blocked:    Pi-hole forwards upstream →  Returns real IP</cod
                     <h3>🔍 Start Here: Quick DNS Check</h3>
                     <p>Run these two commands in your Mac Terminal right now:</p>
                     <div class="code-block">
-<code><span class="key">nslookup</span> google.com
-<span class="key">nslookup</span> ads.doubleclick.net</code>
-                    </div>
+                  <div class="code-title">TERMINAL — YOUR MAC</div>
+                  <pre><span class="key">nslookup</span> google.com
+<span class="key">nslookup</span> ads.doubleclick.net</pre>
+                </div>
                     <p><strong>What to look for:</strong></p>
                     <ul>
                         <li>The <code>Server:</code> line should show your Pi-hole's IP (e.g., <code>192.168.4.2</code>). If it shows <code>1.1.1.1</code>, <code>8.8.8.8</code>, or anything else, DNS is bypassing Pi-hole entirely.</li>
@@ -644,9 +657,10 @@ If domain is NOT blocked:    Pi-hole forwards upstream →  Returns real IP</cod
                 <p><strong>Symptom:</strong> You can't reach the Pi-hole admin dashboard. SSH to the Pi and run <code>docker ps | grep pihole</code> — the container doesn't appear in the list.</p>
                 <p><strong>Fix:</strong> SSH into your Pi and restart the container:
                     <div class="code-block">
-<code><span class="key">cd ~/homelab/pihole</span>
-<span class="key">docker compose up -d</span></code>
-                    </div>
+                  <div class="code-title">SSH — RASPBERRY PI</div>
+                  <pre><span class="key">cd ~/homelab/pihole</span>
+<span class="key">docker compose up -d</span></pre>
+                </div>
                 </p>
 
                 <h3>4. 📺 The ad isn't DNS-based (first-party ads)</h3>
@@ -723,7 +737,8 @@ If domain is NOT blocked:    Pi-hole forwards upstream →  Returns real IP</cod
 
                 <h3>Step 3: Verify from Mac Terminal</h3>
                 <div class="code-block">
-<code><span class="key">scutil --dns</span> <span class="cm"># Look for nameserver entries</span></code>
+                  <div class="code-title">TERMINAL — YOUR MAC</div>
+                  <pre><span class="key">scutil --dns</span> <span class="cm"># Look for nameserver entries</span></pre>
                 </div>
                 <p>You should see your Pi-hole's IP listed under nameserver. If you see <code>8.8.8.8</code>, <code>1.1.1.1</code>, or other public DNS servers, the network DNS isn't pointing to Pi-hole.</p>
 
@@ -779,38 +794,40 @@ If domain is NOT blocked:    Pi-hole forwards upstream →  Returns real IP</cod
                 <h3>Step 1: Check Container Status</h3>
                 <p>SSH into your Raspberry Pi and verify Pi-hole is running:</p>
                 <div class="code-block">
-<code><span class="key">ssh</span> <span class="flag">-l</span> amervar@homelab.local
-<span class="key">docker ps</span> <span class="flag">|</span> <span class="key">grep</span> pihole</code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">SSH — RASPBERRY PI</div>
+                  <pre><span class="key">ssh</span> <span class="flag">-l</span> amervar@homelab.local
+<span class="key">docker ps</span> <span class="flag">|</span> <span class="key">grep</span> pihole</pre>
                 </div>
 
                 <p><strong>Expected output:</strong></p>
                 <div class="code-block">
-<code>CONTAINER ID   IMAGE                      STATUS          PORTS
-abc123d        pihole:latest              Up 2 hours      0.0.0.0:53->53/udp, :::53->53/udp</code>
+                  <div class="code-title">EXPECTED OUTPUT</div>
+                  <pre>CONTAINER ID   IMAGE                      STATUS          PORTS
+abc123d        pihole:latest              Up 2 hours      0.0.0.0:53->53/udp, :::53->53/udp</pre>
                 </div>
 
                 <p>The status should say <code>Up X hours/minutes</code>. If it says <code>Exited</code> or doesn't appear, the container is not running.</p>
 
                 <h3>Step 2: Check Pi-hole Logs</h3>
                 <div class="code-block">
-<code><span class="key">docker logs pihole --tail</span> <span class="flag">50</span></code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">SSH — RASPBERRY PI</div>
+                  <pre><span class="key">docker logs pihole --tail</span> <span class="flag">50</span></pre>
                 </div>
 
                 <p><strong>Look for:</strong> Any error messages or DNS startup logs. Pi-hole should log something like:</p>
                 <div class="code-block">
-<code><span class="cm">[services] pihole.service is enabled</span>
+                  <div class="code-title">EXPECTED OUTPUT</div>
+                  <pre><span class="cm">[services] pihole.service is enabled</span>
 <span class="cm">[DNS] Starting Pi-hole DNS server</span>
-<span class="cm">[DNS] Listening on port 53</span></code>
+<span class="cm">[DNS] Listening on port 53</span></pre>
                 </div>
 
                 <h3>Step 3: Verify Port 53 is Bound</h3>
                 <p>DNS runs on port 53 (both TCP and UDP). Verify it's open:</p>
                 <div class="code-block">
-<code><span class="key">sudo ss -tlnp</span> <span class="flag">|</span> <span class="key">grep</span> :53
-<span class="key">sudo ss -ulnp</span> <span class="flag">|</span> <span class="key">grep</span> :53</code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">SSH — RASPBERRY PI</div>
+                  <pre><span class="key">sudo ss -tlnp</span> <span class="flag">|</span> <span class="key">grep</span> :53
+<span class="key">sudo ss -ulnp</span> <span class="flag">|</span> <span class="key">grep</span> :53</pre>
                 </div>
 
                 <p><strong>Expected output (TCP):</strong> <code>LISTEN ... 0.0.0.0:53 ... docker-proxy</code></p>
@@ -819,8 +836,8 @@ abc123d        pihole:latest              Up 2 hours      0.0.0.0:53->53/udp, ::
                 <h3>Step 4: Access Pi-hole Admin Dashboard</h3>
                 <p>Open your browser and navigate to:</p>
                 <div class="code-block">
-<code>https://192.168.4.2/admin</code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">BROWSER ADDRESS</div>
+                  <pre>https://192.168.4.2/admin</pre>
                 </div>
 
                 <p><strong>Important:</strong> Pi-hole v6 uses HTTPS and has a self-signed certificate. Your browser will show a warning:</p>
@@ -877,8 +894,8 @@ abc123d        pihole:latest              Up 2 hours      0.0.0.0:53->53/udp, ::
                 <h3>What's Your Mac Using for DNS?</h3>
                 <p>Run this command in Terminal to see all DNS servers your Mac is configured to use:</p>
                 <div class="code-block">
-<code><span class="key">scutil --dns</span></code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">TERMINAL — YOUR MAC</div>
+                  <pre><span class="key">scutil --dns</span></pre>
                 </div>
 
                 <p><strong>Look for:</strong> A section that lists your Pi-hole IP (e.g., <code>nameserver[0]: 192.168.4.2</code>). It should be the first entry.</p>
@@ -886,18 +903,19 @@ abc123d        pihole:latest              Up 2 hours      0.0.0.0:53->53/udp, ::
                 <h3>Test DNS Resolution to Google</h3>
                 <p>This should return a real IP address:</p>
                 <div class="code-block">
-<code><span class="key">nslookup google.com</span></code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">TERMINAL — YOUR MAC</div>
+                  <pre><span class="key">nslookup google.com</span></pre>
                 </div>
 
                 <p><strong>Expected output:</strong></p>
                 <div class="code-block">
-<code>Server:         192.168.4.2
+                  <div class="code-title">EXPECTED OUTPUT</div>
+                  <pre>Server:         192.168.4.2
 Address:        192.168.4.2#53
 
 Non-authoritative answer:
 Name:   google.com
-Address: 142.251.41.14</code>
+Address: 142.251.41.14</pre>
                 </div>
 
                 <p>The <code>Server</code> line must show your Pi-hole's IP. If it shows <code>1.1.1.1</code>, <code>8.8.8.8</code>, or your ISP's DNS, queries are bypassing Pi-hole.</p>
@@ -905,8 +923,8 @@ Address: 142.251.41.14</code>
                 <h3>More Detailed Query with dig</h3>
                 <p>For more verbose output, use <code>dig</code> and specify the Pi-hole IP directly:</p>
                 <div class="code-block">
-<code><span class="key">dig google.com</span> <span class="flag">@192.168.4.2</span></code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">TERMINAL — YOUR MAC</div>
+                  <pre><span class="key">dig google.com</span> <span class="flag">@192.168.4.2</span></pre>
                 </div>
 
                 <p>This forces a query directly to your Pi-hole IP. Look for the <code>ANSWER SECTION</code> with the real IP.</p>
@@ -924,8 +942,8 @@ Address: 142.251.41.14</code>
                 <h3>Flush Your Mac's DNS Cache</h3>
                 <p>If you've recently changed DNS settings, flush the cache:</p>
                 <div class="code-block">
-<code><span class="key">sudo killall -HUP mDNSResponder</span></code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">SSH — RASPBERRY PI</div>
+                  <pre><span class="key">sudo killall -HUP mDNSResponder</span></pre>
                 </div>
 
                 <p>Or simply toggle Wi-Fi off/on, which forces a fresh DHCP lease and picks up new DNS servers.</p>
@@ -978,21 +996,21 @@ Address: 142.251.41.14</code>
                 <p>Run these commands in Terminal. If Pi-hole is working, the known ad domains should return <code>0.0.0.0</code> or <code>NXDOMAIN</code>:</p>
 
                 <div class="code-block">
-<code><span class="cm"># These SHOULD be blocked by Pi-hole</span>
+                  <div class="code-title">TERMINAL — YOUR MAC</div>
+                  <pre><span class="cm"># These SHOULD be blocked by Pi-hole</span>
 <span class="key">nslookup ads.doubleclick.net</span>
 <span class="key">nslookup pagead2.googlesyndication.com</span>
 <span class="key">nslookup www.googleadservices.com</span>
 <span class="key">nslookup ad.doubleclick.net</span>
-<span class="key">nslookup static.ads-twitter.com</span></code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="key">nslookup static.ads-twitter.com</span></pre>
                 </div>
 
                 <div class="code-block">
-<code><span class="cm"># These should return REAL IPs (not blocked)</span>
+                  <div class="code-title">TERMINAL — YOUR MAC</div>
+                  <pre><span class="cm"># These should return REAL IPs (not blocked)</span>
 <span class="key">nslookup google.com</span>
 <span class="key">nslookup apple.com</span>
-<span class="key">nslookup github.com</span></code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="key">nslookup github.com</span></pre>
                 </div>
 
                 <h3>Reading Pi-hole's Response</h3>
@@ -1096,31 +1114,32 @@ Address: 142.251.41.14</code>
                 <h3>Check Traefik Container Status</h3>
                 <p>SSH into your Pi and verify Traefik is running:</p>
                 <div class="code-block">
-<code><span class="key">ssh</span> <span class="flag">-l</span> amervar@homelab.local
-<span class="key">docker ps</span> <span class="flag">|</span> <span class="key">grep traefik</span></code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">SSH — RASPBERRY PI</div>
+                  <pre><span class="key">ssh</span> <span class="flag">-l</span> amervar@homelab.local
+<span class="key">docker ps</span> <span class="flag">|</span> <span class="key">grep traefik</span></pre>
                 </div>
 
                 <p><strong>Expected output:</strong> Container should show status <code>Up</code> and expose ports like <code>0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp</code>.</p>
 
                 <h3>Check Traefik Logs</h3>
                 <div class="code-block">
-<code><span class="key">docker logs traefik --tail</span> <span class="flag">30</span></code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">SSH — RASPBERRY PI</div>
+                  <pre><span class="key">docker logs traefik --tail</span> <span class="flag">30</span></pre>
                 </div>
 
                 <p><strong>Look for:</strong> Any startup errors or warnings. Traefik should show something like:</p>
                 <div class="code-block">
-<code><span class="cm">msg=Starting Traefik version=v3.x.x</span>
-<span class="cm">msg=Starting provider: docker</span></code>
+                  <div class="code-title">EXPECTED OUTPUT</div>
+                  <pre><span class="cm">msg=Starting Traefik version=v3.x.x</span>
+<span class="cm">msg=Starting provider: docker</span></pre>
                 </div>
 
                 <h3>Verify Ports 80 and 443 Are Bound</h3>
                 <p>Check that HTTP and HTTPS ports are open:</p>
                 <div class="code-block">
-<code><span class="key">sudo ss -tlnp</span> <span class="flag">|</span> <span class="key">grep</span> :<span class="flag">80</span>
-<span class="key">sudo ss -tlnp</span> <span class="flag">|</span> <span class="key">grep</span> :<span class="flag">443</span></code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">SSH — RASPBERRY PI</div>
+                  <pre><span class="key">sudo ss -tlnp</span> <span class="flag">|</span> <span class="key">grep</span> :<span class="flag">80</span>
+<span class="key">sudo ss -tlnp</span> <span class="flag">|</span> <span class="key">grep</span> :<span class="flag">443</span></pre>
                 </div>
 
                 <p><strong>Expected output:</strong> <code>LISTEN ... 0.0.0.0:80 ... docker-proxy</code> and similar for 443.</p>
@@ -1128,8 +1147,8 @@ Address: 142.251.41.14</code>
                 <h3>Access Traefik Dashboard</h3>
                 <p>Open your browser and navigate to:</p>
                 <div class="code-block">
-<code>http://192.168.4.100:8080</code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">BROWSER ADDRESS</div>
+                  <pre>http://192.168.4.100:8080</pre>
                 </div>
 
                 <p>The Traefik dashboard should show:</p>
@@ -1142,23 +1161,24 @@ Address: 142.251.41.14</code>
                 <h3>Check Pi-hole Routing (if configured)</h3>
                 <p>If you've added Traefik labels to the Pi-hole container, it should appear in the dashboard. SSH to the Pi and check the docker-compose.yml:</p>
                 <div class="code-block">
-<code><span class="key">cat ~/homelab/pihole/docker-compose.yml</span> <span class="flag">|</span> <span class="key">grep -A5</span> labels</code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">SSH — RASPBERRY PI</div>
+                  <pre><span class="key">cat ~/homelab/pihole/docker-compose.yml</span> <span class="flag">|</span> <span class="key">grep -A5</span> labels</pre>
                 </div>
 
                 <p>You should see labels like:</p>
                 <div class="code-block">
-<code>labels:
+                  <div class="code-title">DOCKER COMPOSE LABELS</div>
+                  <pre>labels:
   - <span class="str">"traefik.enable=true"</span>
   - <span class="str">"traefik.http.routers.pihole.rule=Host(\"pi-hole.local\")"</span>
-  - <span class="str">"traefik.http.services.pihole.loadbalancer.server.port=80"</span></code>
+  - <span class="str">"traefik.http.services.pihole.loadbalancer.server.port=80"</span></pre>
                 </div>
 
                 <h3>Quick Traefik API Check</h3>
                 <p>Get detailed JSON info about Traefik's configuration:</p>
                 <div class="code-block">
-<code><span class="key">curl http://192.168.4.100:8080/api/rawdata</span> <span class="flag">|</span> <span class="key">python3 -m json.tool</span> <span class="flag">|</span> <span class="key">head -50</span></code>
-                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                  <div class="code-title">SSH — RASPBERRY PI</div>
+                  <pre><span class="key">curl http://192.168.4.100:8080/api/rawdata</span> <span class="flag">|</span> <span class="key">python3 -m json.tool</span> <span class="flag">|</span> <span class="key">head -50</span></pre>
                 </div>
 
                 <details class="verify">
@@ -1492,22 +1512,29 @@ Address: 142.251.41.14</code>
         });
 
         // ===== COPY CODE BLOCKS =====
-        function copyCode(button) {
-            const codeBlock = button.parentElement;
-            const code = codeBlock.querySelector('code').innerText;
-
-            navigator.clipboard.writeText(code).then(() => {
-                const originalText = button.textContent;
-                button.textContent = 'Copied!';
-                button.classList.add('copied');
-                setTimeout(() => {
-                    button.textContent = originalText;
-                    button.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                console.error('Copy failed:', err);
+        document.querySelectorAll('.code-block').forEach(block => {
+            const titleBar = block.querySelector('.code-title');
+            if (!titleBar) return;
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'COPY';
+            btn.addEventListener('click', () => {
+                const pre = block.querySelector('pre');
+                if (!pre) return;
+                const text = pre.innerText || pre.textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.textContent = '✓ COPIED';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = 'COPY';
+                        btn.classList.remove('copied');
+                    }, 2200);
+                }).catch(() => {
+                    btn.textContent = 'COPY';
+                });
             });
-        }
+            titleBar.appendChild(btn);
+        });
 
         // ===== VARIABLE SUBSTITUTION =====
         const piIpInput = document.getElementById('PI_IP');
@@ -1519,7 +1546,7 @@ Address: 142.251.41.14</code>
             const PI_USER = piUserInput.value;
             const PIHOLE_IP = piholeIpInput.value;
 
-            document.querySelectorAll('.code-block code').forEach(codeBlock => {
+            document.querySelectorAll('.code-block pre').forEach(codeBlock => {
                 let originalText = codeBlock.getAttribute('data-original');
                 if (!originalText) {
                     originalText = codeBlock.innerText;

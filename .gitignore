@@ -1,3 +1,6 @@
+# Claude Code internal tooling
+.superpowers/
+
 # OS
 .DS_Store
 **/.DS_Store
